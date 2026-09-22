@@ -11,6 +11,7 @@ export interface RecipeRepository {
     query: FilterQuery<RecipeDocument>,
     options?: FindOptions,
   ): Promise<RecipeHydratedDocument[]>;
+  findAll(): Promise<RecipeHydratedDocument[]>;
   count(query: FilterQuery<RecipeDocument>): Promise<number>;
   findById(id: string): Promise<RecipeHydratedDocument | null>;
   update(id: string, data: UpdateQuery<RecipeDocument>): Promise<RecipeHydratedDocument | null>;
@@ -21,6 +22,7 @@ export const recipeRepository: RecipeRepository = {
   create: (data) => RecipeModel.create(data),
   find: (query, { sort = '-createdAt', skip = 0, limit = 10 } = {}) =>
     RecipeModel.find(query).sort(sort).skip(skip).limit(limit).exec(),
+  findAll: () => RecipeModel.find().sort('-createdAt').exec(),
   count: (query) => RecipeModel.countDocuments(query).exec(),
   findById: (id) => RecipeModel.findById(id).exec(),
   update: (id, data) =>

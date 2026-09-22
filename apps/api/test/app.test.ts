@@ -19,6 +19,13 @@ function service(overrides: Record<string, unknown> = {}) {
     getRecipeById: vi.fn(),
     updateRecipe: vi.fn(),
     deleteRecipe: vi.fn(),
+    getTakeout: vi.fn().mockResolvedValue({
+      version: '1.0',
+      exportedAt: '2026-09-22T00:00:00.000Z',
+      app: 'Mise',
+      recipeCount: 0,
+      recipes: [],
+    }),
     ...overrides,
   } as any;
 }
@@ -125,5 +132,45 @@ describe('Mise API', () => {
     const response = await app().request('/api/recipes/nope');
     expect(response.status).toBe(400);
     expect(await response.json()).toMatchObject({ error: { code: 'INVALID_ID' } });
+  });
+  it('exports all data via /api/takeout with attachment headers', async () => {
+    const mockTakeout = {
+      version: '1.0',
+      exportedAt: '2026-09-22T00:00:00.000Z',
+      app: 'Mise',
+      recipeCount: 1,
+      recipes: [{ _id: '665544332211009988776655', name: 'Brioche' }],
+    };
+    const getTakeout = vi.fn().mockResolvedValue(mockTakeout);
+    const response = await app({ getTakeout }).request('/api/takeout');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-disposition')).toMatch(
+      /attachment; filename="mise-takeout-.*\.json"/,
+    );
+    expect(await response.json()).toEqual({
+      success: true,
+      data: mockTakeout,
+    });
+    expect(getTakeout).toHaveBeenCalled();
+  });
+  it('exports all data via /api/recipes/takeout alias with attachment headers', async () => {
+    const mockTakeout = {
+      version: '1.0',
+      exportedAt: '2026-09-22T00:00:00.000Z',
+      app: 'Mise',
+      recipeCount: 1,
+      recipes: [{ _id: '665544332211009988776655', name: 'Brioche' }],
+    };
+    const getTakeout = vi.fn().mockResolvedValue(mockTakeout);
+    const response = await app({ getTakeout }).request('/api/recipes/takeout');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-disposition')).toMatch(
+      /attachment; filename="mise-takeout-.*\.json"/,
+    );
+    expect(await response.json()).toEqual({
+      success: true,
+      data: mockTakeout,
+    });
+    expect(getTakeout).toHaveBeenCalled();
   });
 });

@@ -183,4 +183,51 @@ describe('api client', () => {
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/recipes/authors', expect.anything());
     expect(result).toEqual(authors);
   });
+
+  it('fetches full takeout data via api.takeout()', async () => {
+    const mockTakeout = {
+      version: '1.0',
+      exportedAt: '2026-09-22T00:00:00.000Z',
+      app: 'Mise',
+      recipeCount: 1,
+      recipes: [{ _id: '123', name: 'Soup' } as any],
+    };
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: mockTakeout,
+      }),
+    } as unknown as Response);
+
+    const result = await api.takeout();
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/takeout', expect.anything());
+    expect(result).toEqual(mockTakeout);
+  });
+
+  it('downloads takeout and computes file metadata via api.downloadTakeout()', async () => {
+    const mockTakeout = {
+      version: '1.0',
+      exportedAt: '2026-09-22T00:00:00.000Z',
+      app: 'Mise',
+      recipeCount: 2,
+      recipes: [{ _id: '1', name: 'A' } as any, { _id: '2', name: 'B' } as any],
+    };
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: mockTakeout,
+      }),
+    } as unknown as Response);
+
+    const result = await api.downloadTakeout();
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/takeout', expect.anything());
+    expect(result.recipeCount).toBe(2);
+    expect(result.filename).toMatch(/^mise-takeout-\d{4}-\d{2}-\d{2}\.json$/);
+    expect(result.sizeBytes).toBeGreaterThan(0);
+    expect(result.data).toEqual(mockTakeout);
+  });
 });

@@ -5,7 +5,7 @@ import phosphorBold from '@phosphor-icons/web/bold?inline';
 import phosphorFill from '@phosphor-icons/web/fill?inline';
 import { api } from '../services/api-client.js';
 
-type View = 'list' | 'detail' | 'form';
+type View = 'list' | 'detail' | 'form' | 'config';
 type Draft = {
   name: string;
   by: string;
@@ -74,6 +74,12 @@ export class MiseApp extends LitElement {
     theme: { state: true },
     message: { state: true },
     apiError: { state: true },
+    takeoutLoading: { state: true },
+    takeoutSuccessMessage: { state: true },
+    takeoutError: { state: true },
+    takeoutPreview: { state: true },
+    showTakeoutPreview: { state: true },
+    takeoutCopied: { state: true },
   };
   declare view: View;
   declare recipes: Recipe[];
@@ -93,6 +99,12 @@ export class MiseApp extends LitElement {
   declare theme: 'light' | 'dark';
   declare message: string;
   declare apiError: string;
+  declare takeoutLoading: boolean;
+  declare takeoutSuccessMessage: string;
+  declare takeoutError: string;
+  declare takeoutPreview: string | null;
+  declare showTakeoutPreview: boolean;
+  declare takeoutCopied: boolean;
   private mediaQueryListener?: (e: MediaQueryListEvent) => void;
   private onDocumentClick = (e: MouseEvent) => {
     const path = e.composedPath();
@@ -127,6 +139,12 @@ export class MiseApp extends LitElement {
     this.page = 1;
     this.limit = 10;
     this.pagination = { total: 0, page: 1, pages: 1 };
+    this.takeoutLoading = false;
+    this.takeoutSuccessMessage = '';
+    this.takeoutError = '';
+    this.takeoutPreview = null;
+    this.showTakeoutPreview = false;
+    this.takeoutCopied = false;
     const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('mise-theme') : null;
     const prefersDark =
       typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches;
@@ -266,6 +284,56 @@ export class MiseApp extends LitElement {
   notify(value: unknown) {
     this.message = value instanceof Error ? value.message : String(value);
     window.setTimeout(() => (this.message = ''), 3500);
+  }
+
+  async handleExportTakeout() {
+    this.takeoutLoading = true;
+    this.takeoutError = '';
+    this.takeoutSuccessMessage = '';
+    try {
+      const res = await api.downloadTakeout();
+      const sizeKb = (res.sizeBytes / 1024).toFixed(1);
+      this.takeoutSuccessMessage = `Successfully exported ${res.recipeCount} recipe${res.recipeCount === 1 ? '' : 's'} to ${res.filename} (${sizeKb} KB)`;
+    } catch (e) {
+      this.takeoutError = e instanceof Error ? e.message : String(e);
+    } finally {
+      this.takeoutLoading = false;
+    }
+  }
+
+  async handleTakeoutPreview() {
+    if (this.showTakeoutPreview) {
+      this.showTakeoutPreview = false;
+      return;
+    }
+    if (this.takeoutPreview) {
+      this.showTakeoutPreview = true;
+      return;
+    }
+    this.takeoutLoading = true;
+    this.takeoutError = '';
+    try {
+      const data = await api.takeout();
+      this.takeoutPreview = JSON.stringify(data, null, 2);
+      this.showTakeoutPreview = true;
+    } catch (e) {
+      this.takeoutError = e instanceof Error ? e.message : String(e);
+    } finally {
+      this.takeoutLoading = false;
+    }
+  }
+
+  async copyTakeoutPreview() {
+    if (!this.takeoutPreview) return;
+    try {
+      await navigator.clipboard.writeText(this.takeoutPreview);
+      this.takeoutCopied = true;
+      window.setTimeout(() => {
+        this.takeoutCopied = false;
+      }, 2000);
+    } catch {
+      // Ignore clipboard permission errors
+    }
   }
   edit(recipe?: Recipe) {
     this.selected = recipe ?? null;
@@ -453,11 +521,36 @@ export class MiseApp extends LitElement {
           <i class="ph ${this.theme === 'dark' ? 'ph-sun' : 'ph-moon'}"></i>
           <span>${this.theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
         </button>
+        <button
+          class="config-toggle ${this.view === 'config' ? 'is-active' : ''}"
+          @click=${() => {
+            if (this.view === 'config') {
+              this.view = 'list';
+            } else {
+              this.view = 'config';
+              this.takeoutError = '';
+              this.takeoutSuccessMessage = '';
+            }
+          }}
+          aria-label=${this.view === 'config' ? 'Back to recipes' : 'Configuration and data takeout'}
+          title="Configuration & Takeout"
+        >
+          <i class="ph ph-gear"></i>
+          <span>Config</span>
+        </button>
         <img class="rosemary" src="/assets/rosemary-sprig.png" alt="" />
       </header>
       ${this.message ? html`<aside role="alert">${this.message}</aside>` : nothing}
       <main>
-        ${this.view === 'list' ? this.list() : this.view === 'detail' ? this.detail() : this.form()}
+        ${
+          this.view === 'list'
+            ? this.list()
+            : this.view === 'detail'
+              ? this.detail()
+              : this.view === 'form'
+                ? this.form()
+                : this.config()
+        }
       </main>`;
   }
 
@@ -1327,6 +1420,221 @@ export class MiseApp extends LitElement {
     </form>`;
   }
 
+  config() {
+    const totalCount = this.pagination?.total ?? this.recipes.length;
+    return html`
+      <section class="panel config-panel">
+        <nav>
+          <button type="button" @click=${() => (this.view = 'list')}>
+            <i class="ph ph-arrow-left"></i>Back to recipes
+          </button>
+        </nav>
+
+        <div class="eyebrow"><i class="ph ph-gear"></i> System & Data Management</div>
+        <h1>Configuration</h1>
+        <p class="lede">
+          Manage application preferences and export your complete recipe collection.
+        </p>
+
+        <section class="config-section" aria-labelledby="takeout-title">
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <span class="section-icon"><i class="ph ph-download-simple"></i></span>
+              <div>
+                <h2 id="takeout-title">Data Takeout</h2>
+                <p class="section-desc">
+                  Export all your recipes, ingredients, instructions, tags, nutritional notes, and
+                  timestamps to a standard JSON file for backup or migration.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="takeout-stats">
+            <div class="stat-card">
+              <span class="stat-value">${totalCount}</span>
+              <span class="stat-label">Total Recipes</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value">${this.courses.length}</span>
+              <span class="stat-label">Courses</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value">${this.authors.length}</span>
+              <span class="stat-label">Authors</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value">JSON</span>
+              <span class="stat-label">Standard UTF-8</span>
+            </div>
+          </div>
+
+          <div class="takeout-actions">
+            <button
+              class="primary export-btn"
+              type="button"
+              ?disabled=${this.takeoutLoading}
+              @click=${() => this.handleExportTakeout()}
+            >
+              <i
+                class="ph ${this.takeoutLoading ? 'ph-spinner ph-spin' : 'ph-download-simple'}"
+              ></i>
+              <span>${this.takeoutLoading ? 'Exporting...' : 'Export All Data (JSON)'}</span>
+            </button>
+
+            <button
+              class="preview-toggle-btn"
+              type="button"
+              ?disabled=${this.takeoutLoading}
+              @click=${() => this.handleTakeoutPreview()}
+            >
+              <i class="ph ${this.showTakeoutPreview ? 'ph-eye-slash' : 'ph-code'}"></i>
+              <span>${this.showTakeoutPreview ? 'Hide JSON Preview' : 'Preview Takeout JSON'}</span>
+            </button>
+          </div>
+
+          ${
+            this.takeoutSuccessMessage
+              ? html`
+                  <div class="takeout-alert success" role="status">
+                    <i class="ph-fill ph-check-circle"></i>
+                    <div>
+                      <strong>Export Complete</strong>
+                      <p>${this.takeoutSuccessMessage}</p>
+                    </div>
+                  </div>
+                `
+              : nothing
+          }
+          ${
+            this.takeoutError
+              ? html`
+                  <div class="takeout-alert error" role="alert">
+                    <i class="ph-fill ph-warning-circle"></i>
+                    <div>
+                      <strong>Export Failed</strong>
+                      <p>${this.takeoutError}</p>
+                    </div>
+                  </div>
+                `
+              : nothing
+          }
+          ${
+            this.showTakeoutPreview && this.takeoutPreview
+              ? html`
+                  <div class="takeout-preview-panel">
+                    <div class="preview-header">
+                      <div class="preview-meta">
+                        <i class="ph ph-file-code"></i>
+                        <span class="preview-name">mise-takeout.json</span>
+                        <span class="preview-chars"
+                          >(${this.takeoutPreview.length.toLocaleString()} characters)</span
+                        >
+                      </div>
+                      <button
+                        type="button"
+                        class="copy-btn"
+                        @click=${() => this.copyTakeoutPreview()}
+                        title="Copy JSON to clipboard"
+                      >
+                        <i class="ph ${this.takeoutCopied ? 'ph-check' : 'ph-copy'}"></i>
+                        <span>${this.takeoutCopied ? 'Copied to Clipboard' : 'Copy JSON'}</span>
+                      </button>
+                    </div>
+                    <pre class="preview-code"><code>${this.takeoutPreview}</code></pre>
+                  </div>
+                `
+              : nothing
+          }
+        </section>
+
+        <section class="config-section" aria-labelledby="preferences-title">
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <span class="section-icon"><i class="ph ph-sliders"></i></span>
+              <div>
+                <h2 id="preferences-title">Display & Preferences</h2>
+                <p class="section-desc">Customize theme and viewing experience.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="pref-grid">
+            <div class="pref-item">
+              <label>Interface Theme</label>
+              <div class="theme-options">
+                <button
+                  type="button"
+                  class="pref-btn ${this.theme === 'light' ? 'is-selected' : ''}"
+                  @click=${() => {
+                    if (this.theme !== 'light') this.toggleTheme();
+                  }}
+                >
+                  <i class="ph ph-sun"></i> Light
+                </button>
+                <button
+                  type="button"
+                  class="pref-btn ${this.theme === 'dark' ? 'is-selected' : ''}"
+                  @click=${() => {
+                    if (this.theme !== 'dark') this.toggleTheme();
+                  }}
+                >
+                  <i class="ph ph-moon"></i> Dark
+                </button>
+              </div>
+            </div>
+
+            <div class="pref-item">
+              <label>Recipes Per Page</label>
+              <div class="theme-options">
+                ${[10, 25, 50].map(
+                  (size) => html`
+                    <button
+                      type="button"
+                      class="pref-btn ${this.limit === size ? 'is-selected' : ''}"
+                      @click=${() => this.changeLimit(size)}
+                    >
+                      ${size}
+                    </button>
+                  `,
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="config-section system-section" aria-labelledby="system-title">
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <span class="section-icon"><i class="ph ph-info"></i></span>
+              <div>
+                <h2 id="system-title">System Status</h2>
+                <p class="section-desc">Application runtime and storage information.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="system-grid">
+            <div class="system-item">
+              <span class="system-label">Application</span>
+              <span class="system-val">Mise v1.0.0</span>
+            </div>
+            <div class="system-item">
+              <span class="system-label">REST API</span>
+              <span class="system-val status-ok"
+                ><i class="ph-fill ph-check-circle"></i> Connected</span
+              >
+            </div>
+            <div class="system-item">
+              <span class="system-label">Database</span>
+              <span class="system-val status-ok"><i class="ph-fill ph-database"></i> MongoDB</span>
+            </div>
+          </div>
+        </section>
+      </section>
+    `;
+  }
+
   static styles = css`
     * {
       box-sizing: border-box;
@@ -1504,6 +1812,308 @@ export class MiseApp extends LitElement {
       margin: 0;
       font-size: 1.05rem;
       color: var(--gold);
+    }
+    .config-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 10px;
+      padding: 0.5rem 0.95rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border: 1px solid var(--border-btn);
+      background: var(--bg-btn);
+      color: var(--color-btn);
+      box-shadow: 0 2px 6px #0000000a;
+      transition:
+        background 0.15s,
+        border-color 0.15s,
+        color 0.15s;
+    }
+    .config-toggle:hover {
+      background: var(--bg-btn-hover);
+      border-color: var(--border-btn-hover);
+    }
+    .config-toggle.is-active {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: var(--category-bg);
+    }
+    .config-toggle i {
+      margin: 0;
+      font-size: 1.05rem;
+      color: var(--gold);
+    }
+
+    .config-panel {
+      padding: 42px 48px;
+    }
+    .config-section {
+      margin-top: 2.2rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--line);
+    }
+    .config-section:first-of-type {
+      margin-top: 1.8rem;
+      padding-top: 0;
+      border-top: none;
+    }
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1.2rem;
+    }
+    .section-title-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .section-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: var(--category-bg);
+      color: var(--gold);
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .section-header h2 {
+      margin: 0 0 4px;
+      font-size: 1.6rem;
+      line-height: 1.2;
+    }
+    .section-desc {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+    .takeout-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      margin: 1.5rem 0;
+    }
+    .stat-card {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gold);
+      font-feature-settings: 'tnum';
+    }
+    .stat-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+    .takeout-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 1.2rem;
+    }
+    .takeout-actions button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      padding: 0.65rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.92rem;
+      transition: all 0.15s ease;
+    }
+    .preview-toggle-btn {
+      background: var(--bg-btn);
+      border: 1px solid var(--border-btn);
+      color: var(--color-btn);
+    }
+    .preview-toggle-btn:hover {
+      background: var(--bg-btn-hover);
+      border-color: var(--border-btn-hover);
+    }
+    .takeout-alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: 8px;
+      margin-top: 1.2rem;
+      font-size: 0.92rem;
+    }
+    .takeout-alert.success {
+      background: var(--category-bg);
+      border: 1px solid var(--category-label);
+      color: var(--ink);
+    }
+    .takeout-alert.success i {
+      color: var(--green);
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .takeout-alert.error {
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      color: var(--error-color);
+    }
+    .takeout-alert.error i {
+      color: var(--error-color);
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .takeout-alert strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+    .takeout-alert p {
+      margin: 0;
+      font-size: 0.88rem;
+    }
+    .takeout-preview-panel {
+      margin-top: 1.5rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--bg-input);
+    }
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--line);
+      font-size: 0.82rem;
+    }
+    .preview-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+    }
+    .preview-meta .preview-name {
+      font-weight: 600;
+      color: var(--ink);
+      font-family: monospace;
+    }
+    .copy-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border-btn);
+      background: var(--bg-btn);
+      color: var(--color-btn);
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .copy-btn:hover {
+      background: var(--bg-btn-hover);
+    }
+    .preview-code {
+      margin: 0;
+      padding: 16px;
+      max-height: 380px;
+      overflow: auto;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      color: var(--ink);
+      background: var(--bg-input);
+    }
+    .pref-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-top: 1.2rem;
+    }
+    .pref-item label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+    .theme-options {
+      display: flex;
+      gap: 8px;
+    }
+    .pref-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-btn);
+      background: var(--bg-btn);
+      color: var(--color-btn);
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .pref-btn:hover {
+      background: var(--bg-btn-hover);
+      border-color: var(--border-btn-hover);
+    }
+    .pref-btn.is-selected {
+      border-color: var(--gold);
+      background: var(--category-bg);
+      color: var(--gold);
+      font-weight: 600;
+    }
+    .system-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-top: 1.2rem;
+    }
+    .system-item {
+      display: flex;
+      flex-direction: column;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--bg-card);
+    }
+    .system-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .system-val {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--ink);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .system-val.status-ok {
+      color: var(--green);
     }
     .rosemary {
       position: absolute;
@@ -2569,11 +3179,22 @@ export class MiseApp extends LitElement {
       }
       .theme-toggle {
         margin-left: auto;
-        margin-right: 50px;
+        margin-right: 6px;
         padding: 0.45rem 0.6rem;
       }
       .theme-toggle span {
         display: none;
+      }
+      .config-toggle {
+        margin-left: 0;
+        margin-right: 48px;
+        padding: 0.45rem 0.6rem;
+      }
+      .config-toggle span {
+        display: none;
+      }
+      .config-panel {
+        padding: 24px 18px;
       }
       .rosemary {
         width: 130px;

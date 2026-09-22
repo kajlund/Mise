@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx src/server.node.ts",
+    "dev": "tsx watch src/server.node.ts",
     "start": "node dist/server.node.js",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",

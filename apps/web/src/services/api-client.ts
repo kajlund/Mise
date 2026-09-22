@@ -4,6 +4,7 @@ import type {
   CreateRecipe,
   Pagination,
   Recipe,
+  TakeoutData,
   UpdateRecipe,
 } from '@mise/contracts';
 
@@ -97,5 +98,37 @@ export const api = {
       method: 'DELETE',
     });
     return res.data;
+  },
+  takeout: async (): Promise<TakeoutData> => {
+    const res = await request<TakeoutData>('/api/takeout');
+    return res.data;
+  },
+  downloadTakeout: async (): Promise<{
+    filename: string;
+    recipeCount: number;
+    sizeBytes: number;
+    data: TakeoutData;
+  }> => {
+    const res = await request<TakeoutData>('/api/takeout');
+    const jsonString = JSON.stringify(res.data, null, 2);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `mise-takeout-${dateStr}.json`;
+    if (typeof document !== 'undefined') {
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    return {
+      filename,
+      recipeCount: res.data.recipeCount,
+      sizeBytes: new Blob([jsonString]).size,
+      data: res.data,
+    };
   },
 };

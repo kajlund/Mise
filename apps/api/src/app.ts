@@ -90,6 +90,12 @@ export function createApp(
   app.post('/api/recipes', zValidator('json', createRecipeSchema, validation), async (c) =>
     c.json({ success: true, data: await service.createRecipe(c.req.valid('json')) }, 201),
   );
+  app.get('/api/recipes/takeout', async (c) => {
+    const data = await service.getTakeout();
+    const date = new Date().toISOString().slice(0, 10);
+    c.header('Content-Disposition', `attachment; filename="mise-takeout-${date}.json"`);
+    return c.json({ success: true, data });
+  });
   app.get('/api/recipes/:id', async (c) =>
     c.json({ success: true, data: await service.getRecipeById(id(c)) }),
   );
@@ -99,6 +105,12 @@ export function createApp(
   app.delete('/api/recipes/:id', async (c) => {
     await service.deleteRecipe(id(c));
     return c.json({ success: true, message: 'Recipe successfully deleted', data: {} });
+  });
+  app.get('/api/takeout', async (c) => {
+    const data = await service.getTakeout();
+    const date = new Date().toISOString().slice(0, 10);
+    c.header('Content-Disposition', `attachment; filename="mise-takeout-${date}.json"`);
+    return c.json({ success: true, data });
   });
   app.all('/api/*', (c) =>
     c.json(

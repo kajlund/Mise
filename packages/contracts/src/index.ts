@@ -80,3 +80,10 @@ export type ApiError = {
   success: false;
   error: { code: string; message: string; requestId: string; details?: unknown };
 };
+export type TakeoutData = {
+  version: string;
+  exportedAt: string;
+  app: string;
+  recipeCount: number;
+  recipes: Recipe[];
+};

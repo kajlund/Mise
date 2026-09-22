@@ -1,5 +1,5 @@
 import { Types, type FilterQuery } from 'mongoose';
-import type { CreateRecipe, UpdateRecipe } from '@mise/contracts';
+import type { CreateRecipe, Recipe, TakeoutData, UpdateRecipe } from '@mise/contracts';
 import { DomainError } from '../errors/domain-error.js';
 import { recipeRepository, type RecipeRepository } from '../repositories/recipe-repository.js';
 import type { RecipeDocument } from '../db/recipe-model.js';
@@ -121,5 +121,15 @@ export class RecipeService {
     this.id(id);
     const recipe = await this.repository.delete(id);
     if (!recipe) throw new DomainError('NOT_FOUND', 'Recipe not found', 404);
+  }
+  async getTakeout(): Promise<TakeoutData> {
+    const recipes = await this.repository.findAll();
+    return {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      app: 'Mise',
+      recipeCount: recipes.length,
+      recipes: recipes as unknown as Recipe[],
+    };
   }
 }
