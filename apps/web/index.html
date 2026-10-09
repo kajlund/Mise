@@ -17,11 +17,18 @@
       (function () {
         try {
           const saved = localStorage.getItem('mise-theme');
-          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          const theme = saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light';
+          const prefersDark = window.matchMedia(
+            '(prefers-color-scheme: dark)',
+          ).matches;
+          const theme =
+            saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light';
           document.documentElement.setAttribute('data-theme', theme);
           const meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute('content', theme === 'dark' ? '#151412' : '#f6f2e9');
+          if (meta)
+            meta.setAttribute(
+              'content',
+              theme === 'dark' ? '#151412' : '#f6f2e9',
+            );
         } catch (_) {}
       })();
     </script>

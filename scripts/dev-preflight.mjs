@@ -18,13 +18,17 @@ function checkPort(host, port) {
       }
       reject(error);
     });
-    server.listen({ host, port, ipv6Only: host === '::1' }, () => server.close(resolve));
+    server.listen({ host, port, ipv6Only: host === '::1' }, () =>
+      server.close(resolve),
+    );
   });
 }
 
 try {
   await Promise.all(
-    requiredPorts.flatMap((port) => loopbackHosts.map((host) => checkPort(host, port))),
+    requiredPorts.flatMap((port) =>
+      loopbackHosts.map((host) => checkPort(host, port)),
+    ),
   );
   console.log('Development ports 3000 and 5173 are available.');
 } catch (error) {

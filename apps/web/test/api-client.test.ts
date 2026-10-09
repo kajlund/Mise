@@ -128,7 +128,10 @@ describe('api client', () => {
 
     const result = await api.courses();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/recipes/courses', expect.anything());
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/recipes/courses',
+      expect.anything(),
+    );
     expect(result).toEqual(courses);
   });
 
@@ -180,7 +183,10 @@ describe('api client', () => {
 
     const result = await api.authors();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/recipes/authors', expect.anything());
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/recipes/authors',
+      expect.anything(),
+    );
     expect(result).toEqual(authors);
   });
 
@@ -190,7 +196,11 @@ describe('api client', () => {
       exportedAt: '2026-09-22T00:00:00.000Z',
       app: 'Mise',
       recipeCount: 1,
-      recipes: [{ _id: '123', name: 'Soup' } as any],
+      recipes: [
+        { _id: '123', name: 'Soup' } as Awaited<
+          ReturnType<typeof api.list>
+        >['recipes'][number],
+      ],
     };
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -202,7 +212,10 @@ describe('api client', () => {
 
     const result = await api.takeout();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/takeout', expect.anything());
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/takeout',
+      expect.anything(),
+    );
     expect(result).toEqual(mockTakeout);
   });
 
@@ -212,7 +225,14 @@ describe('api client', () => {
       exportedAt: '2026-09-22T00:00:00.000Z',
       app: 'Mise',
       recipeCount: 2,
-      recipes: [{ _id: '1', name: 'A' } as any, { _id: '2', name: 'B' } as any],
+      recipes: [
+        { _id: '1', name: 'A' } as Awaited<
+          ReturnType<typeof api.list>
+        >['recipes'][number],
+        { _id: '2', name: 'B' } as Awaited<
+          ReturnType<typeof api.list>
+        >['recipes'][number],
+      ],
     };
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -224,7 +244,10 @@ describe('api client', () => {
 
     const result = await api.downloadTakeout();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/takeout', expect.anything());
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/takeout',
+      expect.anything(),
+    );
     expect(result.recipeCount).toBe(2);
     expect(result.filename).toMatch(/^mise-takeout-\d{4}-\d{2}-\d{2}\.json$/);
     expect(result.sizeBytes).toBeGreaterThan(0);

@@ -15,7 +15,11 @@ const logger = pino({
     ? {
         transport: {
           target: 'pino-pretty',
-          options: { colorize: true, translateTime: 'SYS:standard', ignore: 'pid,hostname' },
+          options: {
+            colorize: true,
+            translateTime: 'SYS:standard',
+            ignore: 'pid,hostname',
+          },
         },
       }
     : {}),
@@ -30,8 +34,15 @@ try {
   process.exit(1);
 }
 const server = serve(
-  { fetch: createApp(new RecipeService(), logger, env.WEB_ORIGIN).fetch, port: env.PORT },
-  () => logger.info({ port: env.PORT, environment: env.NODE_ENV }, 'Mise API listening'),
+  {
+    fetch: createApp(new RecipeService(), logger, env.WEB_ORIGIN).fetch,
+    port: env.PORT,
+  },
+  () =>
+    logger.info(
+      { port: env.PORT, environment: env.NODE_ENV },
+      'Mise API listening',
+    ),
 );
 async function shutdown(signal: string) {
   logger.info({ signal }, 'shutting down');

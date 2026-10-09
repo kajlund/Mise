@@ -1,4 +1,8 @@
-import mongoose, { type HydratedDocument, type Model, type Types } from 'mongoose';
+import mongoose, {
+  type HydratedDocument,
+  type Model,
+  type Types,
+} from 'mongoose';
 
 const { Schema, model, models } = mongoose;
 export interface RecipeDocument {
@@ -55,7 +59,11 @@ const recipeSchema = new Schema<RecipeDocument>(
     prepTimeMinutes: { type: Number, min: 0, default: null },
     cookTimeMinutes: { type: Number, min: 0, default: null },
     servings: { type: Number, min: 1, default: null },
-    difficulty: { type: String, enum: ['easy', 'medium', 'hard', null], default: null },
+    difficulty: {
+      type: String,
+      enum: ['easy', 'medium', 'hard', null],
+      default: null,
+    },
     course: { type: String, default: '', trim: true },
     cuisine: { type: String, default: '', trim: true },
     notes: { type: String, default: '', trim: true },
@@ -66,7 +74,12 @@ const recipeSchema = new Schema<RecipeDocument>(
   },
   { timestamps: true },
 );
-recipeSchema.index({ name: 'text', description: 'text', tags: 'text', 'ingredients.name': 'text' });
+recipeSchema.index({
+  name: 'text',
+  description: 'text',
+  tags: 'text',
+  'ingredients.name': 'text',
+});
 export type RecipeHydratedDocument = HydratedDocument<RecipeDocument>;
 export const RecipeModel =
   (models.Recipe as Model<RecipeDocument> | undefined) ??

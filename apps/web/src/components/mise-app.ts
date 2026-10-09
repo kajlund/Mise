@@ -1,5 +1,11 @@
 import { LitElement, css, html, nothing } from 'lit';
-import type { CreateRecipe, Ingredient, Instruction, Pagination, Recipe } from '@mise/contracts';
+import type {
+  CreateRecipe,
+  Ingredient,
+  Instruction,
+  Pagination,
+  Recipe,
+} from '@mise/contracts';
 import phosphorRegular from '@phosphor-icons/web/regular?inline';
 import phosphorBold from '@phosphor-icons/web/bold?inline';
 import phosphorFill from '@phosphor-icons/web/fill?inline';
@@ -42,7 +48,9 @@ const emptyDraft = (): Draft => ({
   notes: '',
   tags: '',
   originUrl: '',
-  ingredients: [{ pos: 1, group: 'Ingredients', name: '', amount: '', unit: '' }],
+  ingredients: [
+    { pos: 1, group: 'Ingredients', name: '', amount: '', unit: '' },
+  ],
   instructions: [{ pos: 1, group: 'Instructions', description: '' }],
 });
 
@@ -109,7 +117,9 @@ export class MiseApp extends LitElement {
   private onDocumentClick = (e: MouseEvent) => {
     const path = e.composedPath();
     if (this.courseDropdownOpen) {
-      const dropdownEl = this.renderRoot?.querySelector('.course-dropdown:not(.author-dropdown)');
+      const dropdownEl = this.renderRoot?.querySelector(
+        '.course-dropdown:not(.author-dropdown)',
+      );
       if (dropdownEl && !path.includes(dropdownEl)) {
         this.courseDropdownOpen = false;
       }
@@ -145,9 +155,13 @@ export class MiseApp extends LitElement {
     this.takeoutPreview = null;
     this.showTakeoutPreview = false;
     this.takeoutCopied = false;
-    const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('mise-theme') : null;
+    const saved =
+      typeof localStorage !== 'undefined'
+        ? localStorage.getItem('mise-theme')
+        : null;
     const prefersDark =
-      typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-color-scheme: dark)').matches;
     this.theme = saved === 'dark' || (!saved && prefersDark) ? 'dark' : 'light';
     this.message = '';
     this.apiError = '';
@@ -175,7 +189,11 @@ export class MiseApp extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    if (this.mediaQueryListener && typeof window !== 'undefined' && window.matchMedia) {
+    if (
+      this.mediaQueryListener &&
+      typeof window !== 'undefined' &&
+      window.matchMedia
+    ) {
       window
         .matchMedia('(prefers-color-scheme: dark)')
         .removeEventListener('change', this.mediaQueryListener);
@@ -191,7 +209,8 @@ export class MiseApp extends LitElement {
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', theme);
       const meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', theme === 'dark' ? '#151412' : '#f6f2e9');
+      if (meta)
+        meta.setAttribute('content', theme === 'dark' ? '#151412' : '#f6f2e9');
     }
   }
 
@@ -278,7 +297,15 @@ export class MiseApp extends LitElement {
         totalPages,
       ];
     }
-    return [1, 'ellipsis', current - 1, current, current + 1, 'ellipsis', totalPages];
+    return [
+      1,
+      'ellipsis',
+      current - 1,
+      current,
+      current + 1,
+      'ellipsis',
+      totalPages,
+    ];
   }
 
   notify(value: unknown) {
@@ -362,7 +389,9 @@ export class MiseApp extends LitElement {
   ingredient(index: number, key: keyof Ingredient, value: string) {
     this.field(
       'ingredients',
-      this.draft.ingredients.map((item, i) => (i === index ? { ...item, [key]: value } : item)),
+      this.draft.ingredients.map((item, i) =>
+        i === index ? { ...item, [key]: value } : item,
+      ),
     );
   }
   instruction(index: number, value: string) {
@@ -385,7 +414,11 @@ export class MiseApp extends LitElement {
       this.draft.instructions.filter((_, i) => i !== index),
     );
   }
-  private reorder<T extends { pos: number }>(items: T[], index: number, offset: -1 | 1): T[] {
+  private reorder<T extends { pos: number }>(
+    items: T[],
+    index: number,
+    offset: -1 | 1,
+  ): T[] {
     const destination = index + offset;
     if (destination < 0 || destination >= items.length) return items;
 
@@ -396,10 +429,16 @@ export class MiseApp extends LitElement {
     return reordered.map((item, i) => ({ ...item, pos: i + 1 }));
   }
   moveIngredient(index: number, offset: -1 | 1) {
-    this.field('ingredients', this.reorder(this.draft.ingredients, index, offset));
+    this.field(
+      'ingredients',
+      this.reorder(this.draft.ingredients, index, offset),
+    );
   }
   moveInstruction(index: number, offset: -1 | 1) {
-    this.field('instructions', this.reorder(this.draft.instructions, index, offset));
+    this.field(
+      'instructions',
+      this.reorder(this.draft.instructions, index, offset),
+    );
   }
   private optionalNumber(value: string): number | null {
     return value.trim() === '' ? null : Number(value);
@@ -439,7 +478,11 @@ export class MiseApp extends LitElement {
         .map((x, i) => ({ ...x, pos: i + 1, name: x.name.trim() })),
       instructions: this.draft.instructions
         .filter((x) => x.description.trim())
-        .map((x, i) => ({ ...x, pos: i + 1, description: x.description.trim() })),
+        .map((x, i) => ({
+          ...x,
+          pos: i + 1,
+          description: x.description.trim(),
+        })),
     };
     try {
       if (this.selected) {
@@ -646,7 +689,11 @@ export class MiseApp extends LitElement {
             ${
               this.courseDropdownOpen
                 ? html`
-                    <div class="course-menu" role="listbox" aria-label="Course filter options">
+                    <div
+                      class="course-menu"
+                      role="listbox"
+                      aria-label="Course filter options"
+                    >
                       <button
                         type="button"
                         role="option"
@@ -748,7 +795,11 @@ export class MiseApp extends LitElement {
             ${
               this.authorDropdownOpen
                 ? html`
-                    <div class="course-menu" role="listbox" aria-label="Author filter options">
+                    <div
+                      class="course-menu"
+                      role="listbox"
+                      aria-label="Author filter options"
+                    >
                       <button
                         type="button"
                         role="option"
@@ -823,14 +874,16 @@ export class MiseApp extends LitElement {
               ? html`
                   <section class="recipe-table" aria-label="Recipes">
                     <div class="table-head">
-                      <span>Recipe</span><span>Details</span><span>Rating</span><span>Actions</span>
+                      <span>Recipe</span><span>Details</span><span>Rating</span
+                      ><span>Actions</span>
                     </div>
                     ${this.recipes.map((recipe) => {
                       const category = this.category(recipe);
                       return html` <article>
                         <div class="recipe-cell">
                           <div class="category">
-                            <span class="category-icon"><i class="ph ${category.icon}"></i></span
+                            <span class="category-icon"
+                              ><i class="ph ${category.icon}"></i></span
                             ><small>${category.label}</small>
                           </div>
                           <h2>
@@ -857,9 +910,11 @@ export class MiseApp extends LitElement {
                             recipe.servings != null
                               ? html`<div class="quick-facts">
                                   ${
-                                    recipe.prepTimeMinutes != null || recipe.cookTimeMinutes != null
+                                    recipe.prepTimeMinutes != null ||
+                                    recipe.cookTimeMinutes != null
                                       ? html`<span
-                                          ><i class="ph ph-clock"></i>${this.formatTime(
+                                          ><i class="ph ph-clock"></i
+                                          >${this.formatTime(
                                             (recipe.prepTimeMinutes ?? 0) +
                                               (recipe.cookTimeMinutes ?? 0),
                                           )}</span
@@ -869,7 +924,8 @@ export class MiseApp extends LitElement {
                                   ${
                                     recipe.servings != null
                                       ? html`<span
-                                          ><i class="ph ph-users"></i>${recipe.servings}</span
+                                          ><i class="ph ph-users"></i
+                                          >${recipe.servings}</span
                                         >`
                                       : nothing
                                   }
@@ -878,7 +934,8 @@ export class MiseApp extends LitElement {
                           }
                         </div>
                         <div class="rating">
-                          <i class="ph-fill ph-star"></i><span>${recipe.rating.toFixed(1)}</span>
+                          <i class="ph-fill ph-star"></i
+                          ><span>${recipe.rating.toFixed(1)}</span>
                         </div>
                         <div class="actions">
                           <button
@@ -931,7 +988,9 @@ export class MiseApp extends LitElement {
                       <i class="ph ph-arrow-counter-clockwise"></i>Clear filters
                     </button>
                   </div>`
-                : html`<p class="empty">No recipes found. Add the first one!</p>`
+                : html`<p class="empty">
+                    No recipes found. Add the first one!
+                  </p>`
       }`;
   }
 
@@ -946,7 +1005,8 @@ export class MiseApp extends LitElement {
     return html`
       <nav class="pagination-bar" aria-label="Recipe pagination">
         <div class="pagination-summary">
-          Showing <strong>${start}–${end}</strong> of <strong>${total}</strong> recipes
+          Showing <strong>${start}–${end}</strong> of
+          <strong>${total}</strong> recipes
         </div>
 
         <div class="pagination-pages">
@@ -963,7 +1023,9 @@ export class MiseApp extends LitElement {
           <div class="page-numbers" role="list">
             ${visiblePages.map((item, idx) =>
               item === 'ellipsis'
-                ? html`<span class="pagination-ellipsis" key="ellipsis-${idx}">…</span>`
+                ? html`<span class="pagination-ellipsis" key="ellipsis-${idx}"
+                    >…</span
+                  >`
                 : html`
                     <button
                       class="page-number ${item === page ? 'active' : ''}"
@@ -1023,7 +1085,8 @@ export class MiseApp extends LitElement {
       </div>
       <h1>${r.name}</h1>
       <p class="meta">
-        ${r.by ? `By ${r.by} · ` : ''}<i class="ph-fill ph-star"></i> ${r.rating.toFixed(1)}
+        ${r.by ? `By ${r.by} · ` : ''}<i class="ph-fill ph-star"></i>
+        ${r.rating.toFixed(1)}
       </p>
       <p class="lede">${r.description}</p>
       <dl class="recipe-facts">
@@ -1047,7 +1110,9 @@ export class MiseApp extends LitElement {
           r.prepTimeMinutes != null || r.cookTimeMinutes != null
             ? html`<div>
                 <dt>Total time</dt>
-                <dd>${this.formatTime((r.prepTimeMinutes ?? 0) + (r.cookTimeMinutes ?? 0))}</dd>
+                <dd>
+                  ${this.formatTime((r.prepTimeMinutes ?? 0) + (r.cookTimeMinutes ?? 0))}
+                </dd>
               </div>`
             : nothing
         }
@@ -1122,13 +1187,19 @@ export class MiseApp extends LitElement {
     return html`<form class="panel recipe-form" @submit=${this.save}>
       <nav>
         <div>
-          <div class="eyebrow">${this.selected ? 'Recipe editor' : 'Add to collection'}</div>
+          <div class="eyebrow">
+            ${this.selected ? 'Recipe editor' : 'Add to collection'}
+          </div>
           <h1>${this.selected ? 'Edit recipe' : 'New recipe'}</h1>
           <p class="form-intro">
-            Keep the essentials together, then build the recipe one row at a time.
+            Keep the essentials together, then build the recipe one row at a
+            time.
           </p>
         </div>
-        <button type="button" @click=${() => (this.view = this.selected ? 'detail' : 'list')}>
+        <button
+          type="button"
+          @click=${() => (this.view = this.selected ? 'detail' : 'list')}
+        >
           Cancel
         </button>
       </nav>
@@ -1213,7 +1284,10 @@ export class MiseApp extends LitElement {
               placeholder="20"
               .value=${this.draft.prepTimeMinutes}
               @input=${(e: Event) =>
-                this.field('prepTimeMinutes', (e.target as HTMLInputElement).value)}
+                this.field(
+                  'prepTimeMinutes',
+                  (e.target as HTMLInputElement).value,
+                )}
           /></label>
           <label
             >Cooking <span class="hint">minutes</span
@@ -1225,7 +1299,10 @@ export class MiseApp extends LitElement {
               placeholder="45"
               .value=${this.draft.cookTimeMinutes}
               @input=${(e: Event) =>
-                this.field('cookTimeMinutes', (e.target as HTMLInputElement).value)}
+                this.field(
+                  'cookTimeMinutes',
+                  (e.target as HTMLInputElement).value,
+                )}
           /></label>
           <label
             >Servings<input
@@ -1247,7 +1324,10 @@ export class MiseApp extends LitElement {
               placeholder="620"
               .value=${this.draft.caloriesPerServing}
               @input=${(e: Event) =>
-                this.field('caloriesPerServing', (e.target as HTMLInputElement).value)}
+                this.field(
+                  'caloriesPerServing',
+                  (e.target as HTMLInputElement).value,
+                )}
           /></label>
         </div>
         <div class="classification-grid">
@@ -1269,7 +1349,8 @@ export class MiseApp extends LitElement {
               @change=${(e: Event) =>
                 this.field(
                   'difficulty',
-                  ((e.target as HTMLSelectElement).value || null) as CreateRecipe['difficulty'],
+                  ((e.target as HTMLSelectElement).value ||
+                    null) as CreateRecipe['difficulty'],
                 )}
             >
               <option value="">Not specified</option>
@@ -1296,7 +1377,8 @@ export class MiseApp extends LitElement {
           </div>
         </div>
         <div class="ingredient-head" aria-hidden="true">
-          <span>Ingredient</span><span>Amount</span><span>Unit</span><span></span>
+          <span>Ingredient</span><span>Amount</span><span>Unit</span
+          ><span></span>
         </div>
         ${this.draft.ingredients.map(
           (x, i) =>
@@ -1413,9 +1495,14 @@ export class MiseApp extends LitElement {
       </section>
       <footer class="form-actions">
         <span>Changes are saved when you submit.</span
-        ><button type="button" @click=${() => (this.view = this.selected ? 'detail' : 'list')}>
+        ><button
+          type="button"
+          @click=${() => (this.view = this.selected ? 'detail' : 'list')}
+        >
           Cancel</button
-        ><button class="primary" type="submit"><i class="ph ph-floppy-disk"></i>Save recipe</button>
+        ><button class="primary" type="submit">
+          <i class="ph ph-floppy-disk"></i>Save recipe
+        </button>
       </footer>
     </form>`;
   }
@@ -1430,21 +1517,27 @@ export class MiseApp extends LitElement {
           </button>
         </nav>
 
-        <div class="eyebrow"><i class="ph ph-gear"></i> System & Data Management</div>
+        <div class="eyebrow">
+          <i class="ph ph-gear"></i> System & Data Management
+        </div>
         <h1>Configuration</h1>
         <p class="lede">
-          Manage application preferences and export your complete recipe collection.
+          Manage application preferences and export your complete recipe
+          collection.
         </p>
 
         <section class="config-section" aria-labelledby="takeout-title">
           <div class="section-header">
             <div class="section-title-wrap">
-              <span class="section-icon"><i class="ph ph-download-simple"></i></span>
+              <span class="section-icon"
+                ><i class="ph ph-download-simple"></i
+              ></span>
               <div>
                 <h2 id="takeout-title">Data Takeout</h2>
                 <p class="section-desc">
-                  Export all your recipes, ingredients, instructions, tags, nutritional notes, and
-                  timestamps to a standard JSON file for backup or migration.
+                  Export all your recipes, ingredients, instructions, tags,
+                  nutritional notes, and timestamps to a standard JSON file for
+                  backup or migration.
                 </p>
               </div>
             </div>
@@ -1479,7 +1572,9 @@ export class MiseApp extends LitElement {
               <i
                 class="ph ${this.takeoutLoading ? 'ph-spinner ph-spin' : 'ph-download-simple'}"
               ></i>
-              <span>${this.takeoutLoading ? 'Exporting...' : 'Export All Data (JSON)'}</span>
+              <span
+                >${this.takeoutLoading ? 'Exporting...' : 'Export All Data (JSON)'}</span
+              >
             </button>
 
             <button
@@ -1488,8 +1583,12 @@ export class MiseApp extends LitElement {
               ?disabled=${this.takeoutLoading}
               @click=${() => this.handleTakeoutPreview()}
             >
-              <i class="ph ${this.showTakeoutPreview ? 'ph-eye-slash' : 'ph-code'}"></i>
-              <span>${this.showTakeoutPreview ? 'Hide JSON Preview' : 'Preview Takeout JSON'}</span>
+              <i
+                class="ph ${this.showTakeoutPreview ? 'ph-eye-slash' : 'ph-code'}"
+              ></i>
+              <span
+                >${this.showTakeoutPreview ? 'Hide JSON Preview' : 'Preview Takeout JSON'}</span
+              >
             </button>
           </div>
 
@@ -1528,7 +1627,8 @@ export class MiseApp extends LitElement {
                         <i class="ph ph-file-code"></i>
                         <span class="preview-name">mise-takeout.json</span>
                         <span class="preview-chars"
-                          >(${this.takeoutPreview.length.toLocaleString()} characters)</span
+                          >(${this.takeoutPreview.length.toLocaleString()}
+                          characters)</span
                         >
                       </div>
                       <button
@@ -1537,11 +1637,17 @@ export class MiseApp extends LitElement {
                         @click=${() => this.copyTakeoutPreview()}
                         title="Copy JSON to clipboard"
                       >
-                        <i class="ph ${this.takeoutCopied ? 'ph-check' : 'ph-copy'}"></i>
-                        <span>${this.takeoutCopied ? 'Copied to Clipboard' : 'Copy JSON'}</span>
+                        <i
+                          class="ph ${this.takeoutCopied ? 'ph-check' : 'ph-copy'}"
+                        ></i>
+                        <span
+                          >${this.takeoutCopied ? 'Copied to Clipboard' : 'Copy JSON'}</span
+                        >
                       </button>
                     </div>
-                    <pre class="preview-code"><code>${this.takeoutPreview}</code></pre>
+                    <pre
+                      class="preview-code"
+                    ><code>${this.takeoutPreview}</code></pre>
                   </div>
                 `
               : nothing
@@ -1554,7 +1660,9 @@ export class MiseApp extends LitElement {
               <span class="section-icon"><i class="ph ph-sliders"></i></span>
               <div>
                 <h2 id="preferences-title">Display & Preferences</h2>
-                <p class="section-desc">Customize theme and viewing experience.</p>
+                <p class="section-desc">
+                  Customize theme and viewing experience.
+                </p>
               </div>
             </div>
           </div>
@@ -1603,13 +1711,18 @@ export class MiseApp extends LitElement {
           </div>
         </section>
 
-        <section class="config-section system-section" aria-labelledby="system-title">
+        <section
+          class="config-section system-section"
+          aria-labelledby="system-title"
+        >
           <div class="section-header">
             <div class="section-title-wrap">
               <span class="section-icon"><i class="ph ph-info"></i></span>
               <div>
                 <h2 id="system-title">System Status</h2>
-                <p class="section-desc">Application runtime and storage information.</p>
+                <p class="section-desc">
+                  Application runtime and storage information.
+                </p>
               </div>
             </div>
           </div>
@@ -1627,7 +1740,9 @@ export class MiseApp extends LitElement {
             </div>
             <div class="system-item">
               <span class="system-label">Database</span>
-              <span class="system-val status-ok"><i class="ph-fill ph-database"></i> MongoDB</span>
+              <span class="system-val status-ok"
+                ><i class="ph-fill ph-database"></i> MongoDB</span
+              >
             </div>
           </div>
         </section>
@@ -2037,7 +2152,8 @@ export class MiseApp extends LitElement {
       padding: 16px;
       max-height: 380px;
       overflow: auto;
-      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-family:
+        'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
       font-size: 0.82rem;
       line-height: 1.5;
       color: var(--ink);
@@ -2476,7 +2592,9 @@ export class MiseApp extends LitElement {
     .table-head,
     article {
       display: grid;
-      grid-template-columns: minmax(330px, 1.5fr) minmax(390px, 1.45fr) 120px 170px;
+      grid-template-columns:
+        minmax(330px, 1.5fr) minmax(390px, 1.45fr)
+        120px 170px;
       align-items: center;
     }
     .table-head {

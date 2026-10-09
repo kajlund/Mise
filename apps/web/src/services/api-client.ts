@@ -27,7 +27,10 @@ async function request<T>(
 ): Promise<{ data: T; meta?: Record<string, unknown> | undefined }> {
   const response = await fetch(path, {
     ...init,
-    headers: { ...(init?.body ? { 'content-type': 'application/json' } : {}), ...init?.headers },
+    headers: {
+      ...(init?.body ? { 'content-type': 'application/json' } : {}),
+      ...init?.headers,
+    },
   });
   const body = (await response.json()) as ApiSuccess<T> | ApiError;
   if (!response.ok || !body.success)
@@ -36,7 +39,9 @@ async function request<T>(
 }
 
 export const api = {
-  list: async (options: string | RecipeListOptions = {}): Promise<RecipeListResult> => {
+  list: async (
+    options: string | RecipeListOptions = {},
+  ): Promise<RecipeListResult> => {
     const opts = typeof options === 'string' ? { query: options } : options;
     const query = opts.query?.trim() ?? '';
     const course = opts.course?.trim() ?? '';

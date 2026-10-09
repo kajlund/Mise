@@ -14,9 +14,15 @@ export interface RecipeRepository {
   findAll(): Promise<RecipeHydratedDocument[]>;
   count(query: FilterQuery<RecipeDocument>): Promise<number>;
   findById(id: string): Promise<RecipeHydratedDocument | null>;
-  update(id: string, data: UpdateQuery<RecipeDocument>): Promise<RecipeHydratedDocument | null>;
+  update(
+    id: string,
+    data: UpdateQuery<RecipeDocument>,
+  ): Promise<RecipeHydratedDocument | null>;
   delete(id: string): Promise<RecipeHydratedDocument | null>;
-  distinct(field: string, query?: FilterQuery<RecipeDocument>): Promise<unknown[]>;
+  distinct(
+    field: string,
+    query?: FilterQuery<RecipeDocument>,
+  ): Promise<unknown[]>;
 }
 export const recipeRepository: RecipeRepository = {
   create: (data) => RecipeModel.create(data),
@@ -26,7 +32,10 @@ export const recipeRepository: RecipeRepository = {
   count: (query) => RecipeModel.countDocuments(query).exec(),
   findById: (id) => RecipeModel.findById(id).exec(),
   update: (id, data) =>
-    RecipeModel.findByIdAndUpdate(id, data, { new: true, runValidators: true }).exec(),
+    RecipeModel.findByIdAndUpdate(id, data, {
+      new: true,
+      runValidators: true,
+    }).exec(),
   delete: (id) => RecipeModel.findByIdAndDelete(id).exec(),
   distinct: (field, query = {}) => RecipeModel.distinct(field, query).exec(),
 };

@@ -1,28 +1,42 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import prettier from 'eslint-config-prettier';
+import globals from 'globals';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**'],
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/build/**',
+      '**/coverage/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
+      '**/.git/**',
+      '**/.vscode/**',
+      '**/.doc/**',
+      '**/.artifacts/**',
+      '**/.verification/**',
+      '**/.compiled/**',
+      '**/.cache/**',
+      '**/.vite/**',
+      '**/data/**',
+    ],
   },
   js.configs.recommended,
-  ...tseslint.configs.recommended,
+  tseslint.configs.recommended,
   {
-    files: ['**/*.ts'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
     },
   },
-  {
-    files: ['**/*.mjs'],
-    languageOptions: {
-      globals: {
-        console: 'readonly',
-        fetch: 'readonly',
-        AbortSignal: 'readonly',
-        setTimeout: 'readonly',
-        process: 'readonly',
-      },
-    },
-  },
+  prettier,
 );

@@ -1,3 +1,4 @@
+import type { RecipeService } from '../src/services/recipe-service.js';
 import pino from 'pino';
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app.ts';
@@ -7,12 +8,15 @@ const app = (overrides: Record<string, unknown> = {}) =>
   createApp(service(overrides), logger, undefined, false);
 function service(overrides: Record<string, unknown> = {}) {
   return {
-    getRecipes: vi
-      .fn()
-      .mockResolvedValue({ recipes: [], pagination: { total: 0, page: 1, pages: 1 } }),
-    searchRecipes: vi
-      .fn()
-      .mockResolvedValue({ recipes: [], query: '', pagination: { total: 0, page: 1, pages: 1 } }),
+    getRecipes: vi.fn().mockResolvedValue({
+      recipes: [],
+      pagination: { total: 0, page: 1, pages: 1 },
+    }),
+    searchRecipes: vi.fn().mockResolvedValue({
+      recipes: [],
+      query: '',
+      pagination: { total: 0, page: 1, pages: 1 },
+    }),
     getCourses: vi.fn().mockResolvedValue(['Breakfast', 'Dessert', 'Dinner']),
     getAuthors: vi.fn().mockResolvedValue(['Alice', 'Bob']),
     createRecipe: vi.fn(),
@@ -27,7 +31,7 @@ function service(overrides: Record<string, unknown> = {}) {
       recipes: [],
     }),
     ...overrides,
-  } as any;
+  } as unknown as RecipeService;
 }
 describe('Mise API', () => {
   it('reports health', async () => {
@@ -38,10 +42,16 @@ describe('Mise API', () => {
   it('lists recipes with pagination metadata', async () => {
     const response = await app().request('/api/recipes');
     expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ success: true, data: [], meta: { count: 0 } });
+    expect(await response.json()).toMatchObject({
+      success: true,
+      data: [],
+      meta: { count: 0 },
+    });
   });
   it('returns distinct courses from /api/recipes/courses', async () => {
-    const getCourses = vi.fn().mockResolvedValue(['Breakfast', 'Dessert', 'Dinner']);
+    const getCourses = vi
+      .fn()
+      .mockResolvedValue(['Breakfast', 'Dessert', 'Dinner']);
     const response = await app({ getCourses }).request('/api/recipes/courses');
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
@@ -61,10 +71,13 @@ describe('Mise API', () => {
     expect(getAuthors).toHaveBeenCalled();
   });
   it('passes course query parameter to getRecipes', async () => {
-    const getRecipes = vi
-      .fn()
-      .mockResolvedValue({ recipes: [], pagination: { total: 0, page: 1, pages: 1 } });
-    const response = await app({ getRecipes }).request('/api/recipes?course=Dessert');
+    const getRecipes = vi.fn().mockResolvedValue({
+      recipes: [],
+      pagination: { total: 0, page: 1, pages: 1 },
+    });
+    const response = await app({ getRecipes }).request(
+      '/api/recipes?course=Dessert',
+    );
     expect(response.status).toBe(200);
     expect(getRecipes).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -73,9 +86,10 @@ describe('Mise API', () => {
     );
   });
   it('passes by query parameter to getRecipes', async () => {
-    const getRecipes = vi
-      .fn()
-      .mockResolvedValue({ recipes: [], pagination: { total: 0, page: 1, pages: 1 } });
+    const getRecipes = vi.fn().mockResolvedValue({
+      recipes: [],
+      pagination: { total: 0, page: 1, pages: 1 },
+    });
     const response = await app({ getRecipes }).request('/api/recipes?by=Alice');
     expect(response.status).toBe(200);
     expect(getRecipes).toHaveBeenCalledWith(
@@ -107,7 +121,9 @@ describe('Mise API', () => {
       query: 'pie',
       pagination: { total: 0, page: 1, pages: 1 },
     });
-    const response = await app({ searchRecipes }).request('/api/recipes/search?q=pie&by=Alice');
+    const response = await app({ searchRecipes }).request(
+      '/api/recipes/search?q=pie&by=Alice',
+    );
     expect(response.status).toBe(200);
     expect(searchRecipes).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -131,7 +147,9 @@ describe('Mise API', () => {
   it('rejects malformed ids', async () => {
     const response = await app().request('/api/recipes/nope');
     expect(response.status).toBe(400);
-    expect(await response.json()).toMatchObject({ error: { code: 'INVALID_ID' } });
+    expect(await response.json()).toMatchObject({
+      error: { code: 'INVALID_ID' },
+    });
   });
   it('exports all data via /api/takeout with attachment headers', async () => {
     const mockTakeout = {

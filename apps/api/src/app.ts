@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { cors } from 'hono/cors';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { zValidator } from '@hono/zod-validator';
@@ -15,7 +15,10 @@ import { DomainError } from './errors/domain-error.js';
 import { RecipeService } from './services/recipe-service.js';
 
 type Variables = { requestId: string };
-const validation = (result: { success: boolean; error?: unknown }, c: any) =>
+const validation = (
+  result: { success: boolean; error?: unknown },
+  c: Context,
+) =>
   result.success
     ? undefined
     : c.json(
@@ -55,12 +58,15 @@ export function createApp(
       'request',
     );
   });
-  const id = (c: any) => {
+  const id = (c: Context<{ Variables: Variables }>) => {
     const parsed = objectIdSchema.safeParse(c.req.param('id'));
-    if (!parsed.success) throw new DomainError('INVALID_ID', 'Invalid ID format', 400);
+    if (!parsed.success)
+      throw new DomainError('INVALID_ID', 'Invalid ID format', 400);
     return parsed.data;
   };
-  app.get('/health', (c) => c.json({ status: 'OK', message: 'Recipe REST API is running' }));
+  app.get('/health', (c) =>
+    c.json({ status: 'OK', message: 'Recipe REST API is running' }),
+  );
   app.get(
     '/api/recipes/search',
     zValidator('query', recipeSearchQuerySchema, validation),
@@ -69,54 +75,91 @@ export function createApp(
       return c.json({
         success: true,
         data: result.recipes,
-        meta: { query: result.query, count: result.recipes.length, pagination: result.pagination },
+        meta: {
+          query: result.query,
+          count: result.recipes.length,
+          pagination: result.pagination,
+        },
       });
     },
   );
-  app.get('/api/recipes', zValidator('query', recipeListQuerySchema, validation), async (c) => {
-    const result = await service.getRecipes(c.req.valid('query'));
-    return c.json({
-      success: true,
-      data: result.recipes,
-      meta: { count: result.recipes.length, pagination: result.pagination },
-    });
-  });
+  app.get(
+    '/api/recipes',
+    zValidator('query', recipeListQuerySchema, validation),
+    async (c) => {
+      const result = await service.getRecipes(c.req.valid('query'));
+      return c.json({
+        success: true,
+        data: result.recipes,
+        meta: { count: result.recipes.length, pagination: result.pagination },
+      });
+    },
+  );
   app.get('/api/recipes/courses', async (c) =>
     c.json({ success: true, data: await service.getCourses() }),
   );
   app.get('/api/recipes/authors', async (c) =>
     c.json({ success: true, data: await service.getAuthors() }),
   );
-  app.post('/api/recipes', zValidator('json', createRecipeSchema, validation), async (c) =>
-    c.json({ success: true, data: await service.createRecipe(c.req.valid('json')) }, 201),
+  app.post(
+    '/api/recipes',
+    zValidator('json', createRecipeSchema, validation),
+    async (c) =>
+      c.json(
+        {
+          success: true,
+          data: await service.createRecipe(c.req.valid('json')),
+        },
+        201,
+      ),
   );
   app.get('/api/recipes/takeout', async (c) => {
     const data = await service.getTakeout();
     const date = new Date().toISOString().slice(0, 10);
-    c.header('Content-Disposition', `attachment; filename="mise-takeout-${date}.json"`);
+    c.header(
+      'Content-Disposition',
+      `attachment; filename="mise-takeout-${date}.json"`,
+    );
     return c.json({ success: true, data });
   });
   app.get('/api/recipes/:id', async (c) =>
     c.json({ success: true, data: await service.getRecipeById(id(c)) }),
   );
-  app.put('/api/recipes/:id', zValidator('json', updateRecipeSchema, validation), async (c) =>
-    c.json({ success: true, data: await service.updateRecipe(id(c), c.req.valid('json')) }),
+  app.put(
+    '/api/recipes/:id',
+    zValidator('json', updateRecipeSchema, validation),
+    async (c) =>
+      c.json({
+        success: true,
+        data: await service.updateRecipe(id(c), c.req.valid('json')),
+      }),
   );
   app.delete('/api/recipes/:id', async (c) => {
     await service.deleteRecipe(id(c));
-    return c.json({ success: true, message: 'Recipe successfully deleted', data: {} });
+    return c.json({
+      success: true,
+      message: 'Recipe successfully deleted',
+      data: {},
+    });
   });
   app.get('/api/takeout', async (c) => {
     const data = await service.getTakeout();
     const date = new Date().toISOString().slice(0, 10);
-    c.header('Content-Disposition', `attachment; filename="mise-takeout-${date}.json"`);
+    c.header(
+      'Content-Disposition',
+      `attachment; filename="mise-takeout-${date}.json"`,
+    );
     return c.json({ success: true, data });
   });
   app.all('/api/*', (c) =>
     c.json(
       {
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Route not found', requestId: c.get('requestId') },
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Route not found',
+          requestId: c.get('requestId'),
+        },
       },
       404,
     ),
@@ -131,7 +174,12 @@ export function createApp(
       return c.json(
         {
           success: false,
-          error: { code: error.code, message: error.message, details: error.details, requestId },
+          error: {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            requestId,
+          },
         },
         error.status,
       );
@@ -139,7 +187,11 @@ export function createApp(
     return c.json(
       {
         success: false,
-        error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred', requestId },
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred',
+          requestId,
+        },
       },
       500,
     );

@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
-export const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid ID format');
+export const objectIdSchema = z
+  .string()
+  .regex(/^[a-f\d]{24}$/i, 'Invalid ID format');
 
 export const ingredientSchema = z.object({
   _id: objectIdSchema.optional(),
@@ -68,7 +70,11 @@ export type Ingredient = z.infer<typeof ingredientSchema>;
 export type Instruction = z.infer<typeof instructionSchema>;
 export type CreateRecipe = z.infer<typeof createRecipeSchema>;
 export type UpdateRecipe = z.infer<typeof updateRecipeSchema>;
-export type Recipe = CreateRecipe & { _id: string; createdAt: string; updatedAt: string };
+export type Recipe = CreateRecipe & {
+  _id: string;
+  createdAt: string;
+  updatedAt: string;
+};
 export type Pagination = { total: number; page: number; pages: number };
 export type ApiSuccess<T> = {
   success: true;
@@ -78,7 +84,12 @@ export type ApiSuccess<T> = {
 };
 export type ApiError = {
   success: false;
-  error: { code: string; message: string; requestId: string; details?: unknown };
+  error: {
+    code: string;
+    message: string;
+    requestId: string;
+    details?: unknown;
+  };
 };
 export type TakeoutData = {
   version: string;

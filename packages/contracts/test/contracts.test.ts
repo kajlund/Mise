@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { createRecipeSchema, recipeListQuerySchema } from '../src/index.js';
 describe('recipe contracts', () => {
   it('applies safe recipe defaults', () => {
-    const value = createRecipeSchema.parse({ userID: '665544332211009988776655', name: 'Soup' });
+    const value = createRecipeSchema.parse({
+      userID: '665544332211009988776655',
+      name: 'Soup',
+    });
     expect(value).toMatchObject({
       rating: 0,
       isFavorite: false,
@@ -31,12 +34,20 @@ describe('recipe contracts', () => {
         servings: 4,
         difficulty: 'easy',
       }),
-    ).toMatchObject({ caloriesPerServing: 320, servings: 4, difficulty: 'easy' });
+    ).toMatchObject({
+      caloriesPerServing: 320,
+      servings: 4,
+      difficulty: 'easy',
+    });
     expect(() => createRecipeSchema.parse({ ...base, servings: 0 })).toThrow();
-    expect(() => createRecipeSchema.parse({ ...base, prepTimeMinutes: 2.5 })).toThrow();
+    expect(() =>
+      createRecipeSchema.parse({ ...base, prepTimeMinutes: 2.5 }),
+    ).toThrow();
   });
   it('coerces and bounds pagination', () => {
-    expect(recipeListQuerySchema.parse({ page: '2', limit: '25' })).toMatchObject({
+    expect(
+      recipeListQuerySchema.parse({ page: '2', limit: '25' }),
+    ).toMatchObject({
       page: 2,
       limit: 25,
     });

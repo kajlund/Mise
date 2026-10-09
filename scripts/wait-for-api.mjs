@@ -3,7 +3,9 @@ const deadline = Date.now() + 15_000;
 
 while (Date.now() < deadline) {
   try {
-    const response = await fetch(healthUrl, { signal: AbortSignal.timeout(1000) });
+    const response = await fetch(healthUrl, {
+      signal: AbortSignal.timeout(1000),
+    });
     if (response.ok) {
       console.log('API is ready. Starting the web app.');
       process.exit(0);
